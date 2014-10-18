@@ -1,3 +1,14 @@
+/* Name: Alexander Brisnehan
+ * File: echoClient
+ * Date: 10/10/14
+ * Uses code from existing echoClient given to us
+ * Use: ./echoClient [port]
+*/
+
+
+
+
+
 #include <string>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -11,7 +22,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
-
+#include <unistd.h>
+#include <termios.h>
 #include <openssl/ssl.h>
 
 using namespace std;
@@ -77,15 +89,30 @@ int TCPecho(const char *host, const char *portnum)
 	SSL *ssl;
 	SSL_CTX *ctx;
 
+	//Initialize the SSL
 	SSL_library_init();
 	SSL_load_error_strings();
 
 	const SSL_METHOD *method = SSLv3_client_method();
 	ctx = SSL_CTX_new(method);
 
+	//Ask for the password
 	printf("Enter the password to decrypt the key\n");
 
+	//Hide the input in the terminal for the password
+	termios oldt;
+	tcgetattr(STDIN_FILENO, &oldt);
+	termios newt = oldt;
+	newt.c_lflag &= ~ECHO;
+	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
+	//Get password
 	fgets(passwd, sizeof(passwd), stdin);
+
+	//Restore terminal 
+	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+
+	//Create the password string
 	passwdString = "";
 	for(int i = 0; i<= LINELEN; i++){
 	    if(passwd[i] != '\0' && passwd[i] != ' ' && passwd[i] != '\n'){
@@ -98,17 +125,23 @@ int TCPecho(const char *host, const char *portnum)
 	passwdString += '\0';
 	char *str =  strncpy(buf1, passwdString.c_str(), sizeof(buf1));
 
+	//Do SSL password mumbo jumbo
 	SSL_CTX_set_default_passwd_cb_userdata(ctx, str);
 
+	//Grab them certs by comparing the password
 	if(SSL_CTX_load_verify_locations(ctx,caCert,NULL) != 1){
-	    printf("Can't get cert file\n");
+	    printf("Can't get cert file. Make sure the password is correct\n");
 	    exit(0);
 	}
 	if(SSL_CTX_use_PrivateKey_file(ctx,clPrivate,SSL_FILETYPE_PEM) != 1){
-	    printf("Can't get privatekey file\n");
+	    printf("Can't get privatekey file. Make sure the password is correct\n");
 	    exit(0);
 	}
+	
+	//Start up echo
+	printf("Start talking!\n");
 
+	//Lets start securing stuff
 	SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL);
 
 	if(ctx == NULL){
@@ -117,8 +150,9 @@ int TCPecho(const char *host, const char *portnum)
 
 	ssl = SSL_new(ctx);
 
-	s = connectsock(host, portnum);
+	//Its a go for a secure socket
 
+	s = connectsock(host, portnum);
 	SSL_set_fd(ssl, s);
 
 	if(SSL_connect(ssl) < 1){
@@ -129,6 +163,7 @@ int TCPecho(const char *host, const char *portnum)
 	while (1) {
 		fgets(buf1, sizeof(buf1), stdin);
 		buf1[LINELEN] = '\0';	/* insure line null-terminated	*/
+		//Secure echo
 		SSL_write(ssl, buf1, sizeof(buf1));
 		memset(&buf1, 0, sizeof(buf1));
 		n = SSL_read(ssl, &buf2, sizeof(buf2));

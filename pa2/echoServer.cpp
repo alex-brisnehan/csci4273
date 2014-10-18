@@ -1,3 +1,9 @@
+/* Name: Alexander Brisnehan
+ * File: echoServer.cpp
+ * Date: 10/10/2014
+ * Uses existing echoServer.cpp given to us
+ * Use: ./echoServer 8888
+*/
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -41,6 +47,7 @@ main(int argc, char *argv[])
 
 	SSL *sslConnections[MAXPORT];
 
+	//Certificate stuff
 	char *serverCert = "server.cert";
 	char *serverKey = "server_priv.key";
 
@@ -63,6 +70,7 @@ main(int argc, char *argv[])
 	const SSL_METHOD *method = SSLv3_server_method();
 	ctx = SSL_CTX_new(method);
 
+	//Make it a secure server
 	if(SSL_CTX_use_PrivateKey_file(ctx, serverKey, SSL_FILETYPE_PEM) != 1)
 	{
 		printf("Can't load privatekey file\n");
@@ -102,6 +110,7 @@ main(int argc, char *argv[])
 			SSL *ssl = SSL_new(ctx);
 			SSL_set_fd(ssl,ssock);
 
+			//Securely read some stuff over the lines
 			if(SSL_accept(ssl) == -1)
 			{
 				errexit("Failure on socket read: %s\n", strerror(errno));

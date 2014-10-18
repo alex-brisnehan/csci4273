@@ -1,3 +1,5 @@
+Alexander Brisnehan, CSCI 4273, Programming Assignment 2
+
 There are two programs in this directory. They illustrate the use of TCP and
 select() system call.
 
@@ -13,9 +15,9 @@ standard output.
 USAGE: echoServer [port]
 
 The echoClient.c contains an ECHO client program. An ECHO client first
-establishes a connection with the ECHO server, and then repeatedly reads 
-character strings from standard input, sends them to the ECHO server, receives
-them from the ECHO server, and then prints them on the standard output.
+establishes a secure connection with the ECHO server, and then repeatedly reads 
+character strings from standard input, sends them securely to the ECHO server, receives
+them securely from the ECHO server, and then prints them on the standard output.
 
 USAGE: echoClient [port [host]]
 
