@@ -5,16 +5,16 @@
  * Use: The header file for the ThreadPool class*
  ************************************************/
 
-#ifndef _THREAD_POOL_
-#define _THREAD_POOL_
 
+#include <iostream>
 #include <map>
+#include <mutex>
 #include <pthread.h>
 #include <semaphore.h>
 #include <string.h>
-#include <mutex>
-#include <iostream>
 
+#ifndef _THREAD_POOL_
+#define _THREAD_POOL_
 typedef void (*function_pointer)(void*);
 
 class ThreadPool
@@ -28,16 +28,14 @@ public:
     int getCount();
 
 private:
+	void execThread();
+    static void* threadInit(void* arg);
+    pthread_t* threads;
     size_t totalThread;
-    pthread_t* threads;;
-    std::map<pthread_t, sem_t> semiTruck;
+    std::map<pthread_t, void*> argue;
     std::map<pthread_t, bool> avail;
     std::map<pthread_t, function_pointer> funk;
-    std::map<pthread_t, void*> argue;
-
-
-    void execThread();
-    static void* threadInit(void* arg);
+    std::map<pthread_t, sem_t> semiTruck;
 };
 
 #endif

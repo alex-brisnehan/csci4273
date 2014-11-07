@@ -17,17 +17,17 @@ typedef void (*function_pointer)(void*);
 
 struct Event
 {
-    function_pointer fn_ptr;
+    function_pointer funk;
     void* arg;
-    timeval trigger_time;
+    timeval trigTime;
     int id;
 };
 
 class CompareEvent {
 public:
     bool operator()(Event& e1, Event& e2) { 
-        if (e2.trigger_time.tv_sec < e1.trigger_time.tv_sec) return true;
-        if (e2.trigger_time.tv_sec == e1.trigger_time.tv_sec && e2.trigger_time.tv_usec < e1.trigger_time.tv_usec) return true;
+        if (e2.trigTime.tv_sec == e1.trigTime.tv_sec && e2.trigTime.tv_usec < e1.trigTime.tv_usec) return true;
+        if (e2.trigTime.tv_sec < e1.trigTime.tv_sec) return true;
         return false;
     };
 };
@@ -35,22 +35,22 @@ public:
 class EventScheduler
 {
 public:
+    EventScheduler();
     EventScheduler(size_t maxEvents);
     ~EventScheduler();
     int eventSchedule(void evFunction(void *), void *arg, int timeout);
     void eventCancel(int eventId);
 
 private:
-    std::priority_queue<Event, std::vector<Event>, CompareEvent> m_queue;
-    size_t m_max_events;
-    ThreadPool* m_pool;
-    int m_current_id;
-    std::mutex m_mutex;
-    std::vector<int> m_cancelled;
-    timeval m_tv;
+    static void planEvent(void* arg);
     bool done;
-    
-    static void coordinateEvent(void* arg);
+    int eventID;
+    size_t eventsMaximum;
+    std::vector<int> eventCancelled;
+    std::mutex eventMutex;
+    std::priority_queue<Event, std::vector<Event>, CompareEvent> eventQueue;
+    ThreadPool* eventPool;
+    timeval tick;
 };
 
 #endif
