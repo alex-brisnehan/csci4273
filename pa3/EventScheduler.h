@@ -4,23 +4,53 @@
  * File: EventScheduler.h                           *
  * Use: The header file for the EventScheduler class*
  ****************************************************/
+	
+#ifndef _EVENT_SCHEDULER_
+#define _EVENT_SCHEDULER_
 
-#ifndef _EVENTSCHEDULER_
-#define _EVENTSCHEDULER_
+#include <vector>
+#include <queue>
+#include <mutex>
+#include "ThreadPool.h"
 
-#include <list>
-#include <string.h>
+typedef void (*function_pointer)(void*);
 
-using namespace std;
+struct Event
+{
+    function_pointer fn_ptr;
+    void* arg;
+    timeval trigger_time;
+    int id;
+};
 
-class EventScheduler {
-    public:
-	EventScheduler(size_t maxEvents);
-	~EventScheduer();
-	int eventSchedule(void evFunction(void *), void * arg, int timeout);
-	void eventCancel(int eventId);
-    private:
-	int eventId;
-}
+class CompareEvent {
+public:
+    bool operator()(Event& e1, Event& e2) { 
+        if (e2.trigger_time.tv_sec < e1.trigger_time.tv_sec) return true;
+        if (e2.trigger_time.tv_sec == e1.trigger_time.tv_sec && e2.trigger_time.tv_usec < e1.trigger_time.tv_usec) return true;
+        return false;
+    };
+};
+
+class EventScheduler
+{
+public:
+    EventScheduler(size_t maxEvents);
+    ~EventScheduler();
+    int eventSchedule(void evFunction(void *), void *arg, int timeout);
+    void eventCancel(int eventId);
+
+private:
+    std::priority_queue<Event, std::vector<Event>, CompareEvent> m_queue;
+    size_t m_max_events;
+    ThreadPool* m_pool;
+    int m_current_id;
+    std::mutex m_mutex;
+    std::vector<int> m_cancelled;
+    timeval m_tv;
+    bool done;
+    
+    static void coordinateEvent(void* arg);
+};
 
 #endif

@@ -10,126 +10,126 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <iostream>
 
 using namespace std;
 
 Message::Message()
 {
-    msgLen = 0;
+    msgLength = 0;
     msgContent.clear();
 }
 Message::Message(char *msg, size_t len)
 {
-    msgLen = len;
-    msgContent.push_front(msg);
+    msgLength = len;
+    pair<char *, size_t> mess(msg, len);
+    msgContent.push_front(mess);
 }
 Message::~Message()
 {
     msgContent.clear();
 }
-Message::msgAddHdr(char *hdr, size_t length)
+void Message::msgAddHdr(char *hdr, size_t length)
 {
-    msgContent.push_front(hdr);
-    msgLen = msgLen + length;
+    pair<char *, size_t>head(hdr,length);
+    msgContent.push_front(head);
+    msgLength = msgLength + length;
 }
 char* Message::msgStripHdr(int len)
 {
-    int i,j = 0;
-    int k = len
+    int i = 0;
+    int k = len;
     char *stripped;
-    char *rem;
 
-    if((len == 0) || (msgLen < len)){
+    if((len == 0) || (msgLength < len)){
 	return NULL;
     }
-    if((int)sizeof(msgContent.front()) == len){
-	msgLen = msgLen - len;
-	stripped = msgContent.front();
+    if(((int)msgContent.front().second) == len){
+	msgLength = msgLength - len;
+	stripped = msgContent.front().first;
 	msgContent.pop_front();
 	return stripped;
     }
     else{
-	i = (int)sizeof(msgContent.front());
-	if( i > len){
-	    stripped = msgContent.front();
-	    rem = msgContent.front();
-	    msgContent.pop_front();
-	    rem = rem + len;
-	    msgContent.push_front(rem);
-	}
-	else if( i < len ){
-	    stripped = new char[len];
-	    for(j = 0; j < len;){
-		i = (int)sizeof(msgContent.front());
-		k = len - j;
-		if( i <= k){
-		    rem = msgContent.front();
-		    memcpy(stripped + j, rem, i);
-		    msgContent.pop_front();
-		    rem = rem + k;
-		    msgContent.push_front(rem);
-		    j = j+k;
-		}
+        stripped = new char[len];
+        for(int j = 0; j < len;){
+	    i = (int)msgContent.front().second;
+	    k = len - j;
+	    if( i <= k){
+		memcpy(stripped + j, msgContent.front().first, i);
+		msgContent.pop_front();
+		j = j+i;
 	    }
-	    msgLen = msgLen - len;
-	    return stripped;
+	    else{
+		memcpy(stripped + j, msgContent.front().first, k);
+		msgContent.front().first += k;
+		msgContent.front().second -= k;
+		j = j + k;
+	    }
 	}
+	msgLength = msgLength - len;
+	return stripped;
+
     }
 }
-int Message::msgSplit(Message &secondMsg; size_t len)
+int Message::msgSplit(Message &secondMsg, size_t len)
 {
-    list <char *> content;
+    list <pair<char *, size_t>> content;
     int i = 0;
-    if((len > msgLen) || (len < 0)){
+    if((len > msgLength) || (len < 0)){
 	return 0;
     }
-    for(int j = 0; j < len;){
-	i = len - 1;
-	if(sizeof(msgContent.front()) <= i){
-	    content.push_front(msgContent.front());
+    for(int j = 0; j < (int)len;){
+	i = len - j;
+	if(((int)msgContent.front().second) <= i){
+	    pair<char *, size_t>temp(msgContent.front().first, msgContent.front().second);
+	    content.push_back(temp);
 	    msgContent.pop_front();
-	    j = j + i;
+	    j = j + (int)content.back().second;
 	}
-	if(sizeof(msgContent.front()) > i){
+	else{
 	    char * firstNode = new char[i];
-	    char * secondNode = msgContent.front();
-	    memcpy(firstNode, secondNode, i);
-	    content.push_front(firstNode);
-	    secondNode = secondNode + i;
-	    msgContent.pop_front();
-	    msgContent.push_front(secondNode);
-	    j = j + i;
+	    memcpy(firstNode, msgContent.front().first, i);
+	    pair<char *, size_t> secondNode(firstNode, i);
+	    content.push_back(secondNode);
+	    msgContent.front().first += i;
+	    msgContent.front().second -= i;
+	    j += i;
 	}
     }
-    secondMsg.msgLen = mgLen - len;
+    secondMsg.msgLength = msgLength - len;
     secondMsg.msgContent = msgContent;
     msgContent = content;
-    msgLen = len;
+    msgLength = len;
     return 1;
 }
 void Message::msgJoin(Message &secondMsg)
 {
-    list <char *> content = secondMsg.msgContent;
+    list <pair<char *, size_t> > content = secondMsg.msgContent;
     while(!content.empty()){
 	msgContent.push_back(content.front());
 	content.pop_front();
     }
-    msgLen = secondMsg.msgLen + msgLen;
+    msgLength = secondMsg.msgLength + msgLength;
     secondMsg.msgContent.clear();
-    secondMsg.msgLen = 0;
+    secondMsg.msgLength = 0;
 }
 size_t Message::msgLen()
 {
-    return msgLen;
+    return msgLength;
 }
 void Message::msgFlat(char *buffer)
 {
-    list <char *> endBuf = msgContent;
+    cout << msgLength << endl;
+    list <pair<char *, size_t> > endBuf = msgContent;
     char * node;
-    int nodeLen
-    for(int i = 0; i < msgLen;){
-	node = endBuf.front();
-	nodeLen = sizeof(node);
-	memcpy(buffer + 1, node, nodeLen);
+    int nodeLen = 0;
+    int i;
+    for(i = 0; i < msgLength;){
+	node = endBuf.front().first;
+	nodeLen = (int)endBuf.front().second;
+	memcpy(buffer + i, node, nodeLen);
+	i += nodeLen;
+	endBuf.pop_front();
     }
 }

@@ -25,8 +25,8 @@ class Message {
 	size_t msgLen();
 	void msgFlat(char *buffer);
     private:
-	size_t msgLen;
-	list<char *> msgContent;
+	size_t msgLength;
+	list<pair<char *, size_t>> msgContent;
 };
 
 #endif
