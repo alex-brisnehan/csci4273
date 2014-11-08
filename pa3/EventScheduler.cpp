@@ -5,20 +5,22 @@
  * Use: The source file for the EventScheduler class*
  ****************************************************/
 #include "EventScheduler.h"
+#include <iostream>
 #include <pthread.h>
 #include <string.h>
-#include <iostream>
 #include <sys/select.h>
 #include <sys/time.h>
 
 using namespace std;
 
+/*Default constructor*/
 EventScheduler::EventScheduler()
 {
     eventsMaximum = 10;
     eventID = 0;
     eventPool = new ThreadPool();
 }
+/*Specified constructor*/
 EventScheduler::EventScheduler(size_t maxEvents)
 {
     eventsMaximum = maxEvents;
@@ -26,6 +28,7 @@ EventScheduler::EventScheduler(size_t maxEvents)
     eventPool = new ThreadPool(maxEvents);
 }
 
+/*Destructor*/
 EventScheduler::~EventScheduler()
 {
     //while(1);
@@ -44,6 +47,8 @@ int EventScheduler::eventSchedule(void evFunction(void *), void *arg, int timeou
 
     // create an event and push it on the queue
     Event e = {evFunction, arg, eventTime, eventID};
+
+    /*Mutex stuff*/
     eventMutex.lock();
     eventQueue.push(e);
     eventMutex.unlock();
@@ -56,7 +61,7 @@ int EventScheduler::eventSchedule(void evFunction(void *), void *arg, int timeou
 
 void EventScheduler::eventCancel(int eventId)
 {
-    // push the event ID onto the cancelled vector
+    /*Mutex stuff and add to vector*/
     eventMutex.lock();
     eventCancelled.push_back(eventId);
     eventMutex.unlock();
@@ -70,14 +75,14 @@ void EventScheduler::planEvent(void* arg)
     Event e = es->eventQueue.top();
     es->eventQueue.pop();
     es->eventMutex.unlock();
-
+    std::vector<int>::iterator i;
     if (select(0, NULL, NULL, NULL, &e.trigTime) < 0) {
         cout << "error with select: " << strerror(errno) << endl;
         exit(1);
     }
 
     es->eventMutex.lock();
-    for (std::vector<int>::iterator i = es->eventCancelled.begin(); i != es->eventCancelled.end(); ++i) {
+    for (i = es->eventCancelled.begin(); i != es->eventCancelled.end(); ++i) {
         if (e.id == *i) {
             es->eventMutex.unlock();
             es->eventCancelled.erase(i);
@@ -86,5 +91,6 @@ void EventScheduler::planEvent(void* arg)
     }
     es->eventMutex.unlock();
 
+    /*Do the function */
     (*(e.funk))(e.arg);
 }

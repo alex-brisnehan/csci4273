@@ -6,11 +6,11 @@
  *********************************************/
 
 #include "Message.h"
+#include <iostream>
 #include <list>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <iostream>
 
 using namespace std;
 
@@ -38,6 +38,7 @@ void Message::msgAddHdr(char *hdr, size_t length)
 char* Message::msgStripHdr(int len)
 {
     int i = 0;
+    int j;
     int k = len;
     char *stripped;
 
@@ -52,7 +53,7 @@ char* Message::msgStripHdr(int len)
     }
     else{
         stripped = new char[len];
-        for(int j = 0; j < len;){
+        for(j = 0; j < len;){
 	    i = (int)msgContent.front().second;
 	    k = len - j;
 	    if( i <= k){
@@ -76,10 +77,11 @@ int Message::msgSplit(Message &secondMsg, size_t len)
 {
     list <pair<char *, size_t>> content;
     int i = 0;
+    int j;
     if((len > msgLength) || (len < 0)){
 	return 0;
     }
-    for(int j = 0; j < (int)len;){
+    for(j = 0; j < (int)len;){
 	i = len - j;
 	if(((int)msgContent.front().second) <= i){
 	    pair<char *, size_t>temp(msgContent.front().first, msgContent.front().second);
@@ -114,13 +116,9 @@ void Message::msgJoin(Message &secondMsg)
     secondMsg.msgContent.clear();
     secondMsg.msgLength = 0;
 }
-size_t Message::msgLen()
-{
-    return msgLength;
-}
 void Message::msgFlat(char *buffer)
 {
-    cout << msgLength << endl;
+    //cout << msgLength << endl;
     list <pair<char *, size_t> > endBuf = msgContent;
     char * node;
     int nodeLen = 0;
@@ -132,4 +130,8 @@ void Message::msgFlat(char *buffer)
 	i += nodeLen;
 	endBuf.pop_front();
     }
+}
+size_t Message::msgLen()
+{
+    return msgLength;
 }

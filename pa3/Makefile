@@ -3,17 +3,18 @@ LIBS=-lpthread
 CC=g++
 
 # Main target
-all: threadpool eventscheduler message
+all: Message ThreadPool EventScheduler
 
-threadpool:
-	$(CC) -o thread $(CFLG) driver1.cc ThreadPool.cpp $(LIBS)
+Message:
+	$(CC) -o Message $(CFLG) driver3.cc Message.cpp $(LIBS)
 
-eventscheduler:
-	$(CC) -o event $(CFLG) driver2.cc EventScheduler.cpp ThreadPool.cpp $(LIBS)
+ThreadPool:
+	$(CC) -o ThreadPool $(CFLG) driver1.cc ThreadPool.cpp $(LIBS)
 
-message:
-	$(CC) -o message $(CFLG) driver3.cc Message.cpp $(LIBS)
+EventScheduler:
+	$(CC) -o EventScheduler $(CFLG) driver2.cc EventScheduler.cpp ThreadPool.cpp $(LIBS)
+
 
 clean:
-	rm -f event thread message *.o *.a
+	rm -f Message ThreadPool EventScheduler *.o *.a
 

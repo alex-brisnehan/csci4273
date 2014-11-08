@@ -1,1 +1,1 @@
-This is a readme for pa3
+Just run make and everything will be made. Run it as ./ThreadPool ./Message ./EventScheduler. Everything will work except driver2 needed a delay added so that the function doesn't end and the events don't get cancelled without running the function.
