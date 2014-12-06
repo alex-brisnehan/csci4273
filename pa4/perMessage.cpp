@@ -11,7 +11,7 @@ procPerMessage::procPerMessage(char* outPort, char* inPort)
 {
     //Create thread for the message to be sent
 
-    m_thread_pool = new ThreadPool(25);
+    threadPool = new ThreadPool(25);
     mutRecvPort = inPort;
     mutSendPort = outPort;
 
@@ -26,7 +26,7 @@ procPerMessage::procPerMessage(char* outPort, char* inPort)
 procPerMessage::~procPerMessage()
 {
     //Just destructor things
-    delete m_thread_pool;
+    delete threadPool;
 }
 
 void procPerMessage::ethernetIn(void* arg)
@@ -97,7 +97,7 @@ void procPerMessage::ipIn(Message* msg)
 {
 
     //Get rid o the header
-    IP_header* stripped = (IP_header*)msg->msgStripHdr(sizeof(IP_header));
+    ipHeader* stripped = (ipHeader*)msg->msgStripHdr(sizeof(ipHeader));
     int protocol_id = stripped->hlp;
 
     //Check where it is going. TCP to tcp; UDP to udp
@@ -113,13 +113,13 @@ void procPerMessage::ipSend(int protocol_id, Message* msg)
 {
 
     //Add header 
-    IP_header *header = new IP_header;
+    ipHeader *header = new ipHeader;
     header->hlp = protocol_id;
 
     //Coming back, send to ethernet instead
     header->m_size = msg->msgLen();
 
-    msg->msgAddHdr((char *)header, sizeof(IP_header));
+    msg->msgAddHdr((char *)header, sizeof(ipHeader));
     ethernetSend(IP_ID, msg);
 
     delete header;
@@ -129,7 +129,7 @@ void procPerMessage::tcpIn(Message* msg)
 {
 
     //Get rid of header
-    TCP_header* stripped = (TCP_header*)msg->msgStripHdr(sizeof(TCP_header));
+    tcpHeader* stripped = (tcpHeader*)msg->msgStripHdr(sizeof(tcpHeader));
     int protocol_id = stripped->hlp;
 
     //Check where it is going
@@ -144,13 +144,13 @@ void procPerMessage::tcpIn(Message* msg)
 void procPerMessage::tcpSend(int protocol_id, Message* msg)
 {
     //Add header
-    TCP_header *header = new TCP_header;
+    tcpHeader *header = new tcpHeader;
     header->hlp = protocol_id;
 
     //Send to ip
     header->m_size = msg->msgLen();
 
-    msg->msgAddHdr((char *)header, sizeof(TCP_header));
+    msg->msgAddHdr((char *)header, sizeof(tcpHeader));
     ipSend(TCP_ID, msg);
 
     delete header;
@@ -159,7 +159,7 @@ void procPerMessage::tcpSend(int protocol_id, Message* msg)
 void procPerMessage::udpIn(Message* msg)
 {
     //Get rid of header
-    UDP_header* stripped = (UDP_header*)msg->msgStripHdr(sizeof(UDP_header));
+    udpHeader* stripped = (udpHeader*)msg->msgStripHdr(sizeof(udpHeader));
     int protocol_id = stripped->hlp;
 
     //Check where it goes
@@ -174,13 +174,13 @@ void procPerMessage::udpIn(Message* msg)
 void procPerMessage::udpSend(int protocol_id, Message* msg)
 {
     //Add header
-    UDP_header *header = new UDP_header;
+    udpHeader *header = new udpHeader;
     header->hlp = protocol_id;
 
     //Send to IP
     header->m_size = msg->msgLen();
 
-    msg->msgAddHdr((char *)header, sizeof(UDP_header));
+    msg->msgAddHdr((char *)header, sizeof(udpHeader));
     ipSend(UDP_ID, msg);
 
     delete header;
@@ -203,7 +203,7 @@ void* procPerMessage::seeUdp(void* arg)
         len = sizeof(clientAddress);
         mess = recvfrom(udpSock, msg_buf, 1024, 0, (struct sockaddr *)&clientAddress, &len);
         Message* msg = new Message(msg_buf, mess);
-        perMessage->m_thread_pool->dispatch_thread(procPerMessage::ethernetIn, (void*) msg);
+        perMessage->threadPool->dispatch_thread(procPerMessage::ethernetIn, (void*) msg);
         // delete[] msg_buf;
     }
 }
@@ -258,7 +258,7 @@ void procPerMessage::rdpIn(Message* msg)
 {
     //Strip header and print
     char buf[1024];
-    RDP_header* stripped = (RDP_header*)msg->msgStripHdr(sizeof(RDP_header));
+    rdpHeader* stripped = (rdpHeader*)msg->msgStripHdr(sizeof(rdpHeader));
     msg->msgFlat(buf);
     printf("RDP recieved message %s\n", buf);
     delete msg;
@@ -267,11 +267,11 @@ void procPerMessage::rdpIn(Message* msg)
 void procPerMessage::rdpSend(int protocol_id, Message* msg)
 {
     //Add header and send
-    RDP_header *header = new RDP_header;
+    rdpHeader *header = new rdpHeader;
     header->hlp = protocol_id;
     header->m_size = msg->msgLen();
 
-    msg->msgAddHdr((char *)header, sizeof(RDP_header));
+    msg->msgAddHdr((char *)header, sizeof(rdpHeader));
     udpSend(RDP_ID, msg);
 
     delete header;
@@ -281,7 +281,7 @@ void procPerMessage::dnsIn(Message* msg)
 {
     //Strip header and print
     char buf[1024];
-    DNS_header* stripped = (DNS_header*)msg->msgStripHdr(sizeof(DNS_header));
+    dnsHeader* stripped = (dnsHeader*)msg->msgStripHdr(sizeof(dnsHeader));
     msg->msgFlat(buf);
     printf("DNS recieved message %s\n", buf);
     delete msg;
@@ -290,11 +290,11 @@ void procPerMessage::dnsIn(Message* msg)
 void procPerMessage::dnsSend(int protocol_id, Message* msg)
 {
     //Add header and send
-    DNS_header *header = new DNS_header;
+    dnsHeader *header = new dnsHeader;
     header->hlp = protocol_id;
     header->m_size = msg->msgLen();
 
-    msg->msgAddHdr((char *)header, sizeof(DNS_header));
+    msg->msgAddHdr((char *)header, sizeof(dnsHeader));
     udpSend(DNS_ID, msg);
 
     delete header;

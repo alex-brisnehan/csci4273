@@ -23,13 +23,13 @@ void* dnsApp(void* arg)
         dns.msg = msg;
 
         // Acquire mutex lock on pipe
-        pthread_mutex_lock(perProto->dnsPipeSend.pipe_mutex);
+        pthread_mutex_lock(perProto->dnsPipeSend.pipeMutex);
 
         // Write to ftp send pipe
         write(perProto->dnsPipeSend.pipe_d[1], (char*) &dns, sizeof(pipeStuff));
 
         // Remove mutex lock on pipe
-        pthread_mutex_unlock(perProto->dnsPipeSend.pipe_mutex);
+        pthread_mutex_unlock(perProto->dnsPipeSend.pipeMutex);
         usleep(SLEEP_USEC);
     }
 }
@@ -45,13 +45,13 @@ void* ftpApp(void* arg)
         ftp.msg = msg;
 
         // Acquire mutex lock on pipe
-        pthread_mutex_lock(perProto->ftpPipeSend.pipe_mutex);
+        pthread_mutex_lock(perProto->ftpPipeSend.pipeMutex);
 
         // Write to ftp send pipe
         write(perProto->ftpPipeSend.pipe_d[1], (char*) &ftp, sizeof(pipeStuff));
 
         // Remove mutex lock on pipe
-        pthread_mutex_unlock(perProto->ftpPipeSend.pipe_mutex);
+        pthread_mutex_unlock(perProto->ftpPipeSend.pipeMutex);
         usleep(SLEEP_USEC);
     }
 }
@@ -67,13 +67,13 @@ void* rdpApp(void* arg)
         rdp.msg = msg;
 
         // Acquire mutex lock on pipe
-        pthread_mutex_lock(perProto->rdpPipeSend.pipe_mutex);
+        pthread_mutex_lock(perProto->rdpPipeSend.pipeMutex);
 
         // Write to ftp send pipe
         write(perProto->rdpPipeSend.pipe_d[1], (char*) &rdp, sizeof(pipeStuff));
 
         // Remove mutex lock on pipe
-        pthread_mutex_unlock(perProto->rdpPipeSend.pipe_mutex);
+        pthread_mutex_unlock(perProto->rdpPipeSend.pipeMutex);
         usleep(SLEEP_USEC);
     }
 }
@@ -89,13 +89,13 @@ void* telnetApp(void* arg)
         tel.msg = msg;
 
         // Acquire mutex lock on pipe
-        pthread_mutex_lock(perProto->telnetPipeSend.pipe_mutex);
+        pthread_mutex_lock(perProto->telnetPipeSend.pipeMutex);
 
         // Write to ftp send pipe
         write(perProto->telnetPipeSend.pipe_d[1], (char*) &tel, sizeof(pipeStuff));
 
         // Remove mutex lock on pipe
-        pthread_mutex_unlock(perProto->telnetPipeSend.pipe_mutex);
+        pthread_mutex_unlock(perProto->telnetPipeSend.pipeMutex);
         usleep(SLEEP_USEC);
     }
 }

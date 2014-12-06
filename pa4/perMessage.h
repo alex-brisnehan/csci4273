@@ -41,7 +41,7 @@ public:
     static void dnsIn(Message* msg);
 
 private:
-    ThreadPool* m_thread_pool;
+    ThreadPool* threadPool;
     static void* seeUdp(void* arg);
     char* mutSendPort;
     char* mutRecvPort;

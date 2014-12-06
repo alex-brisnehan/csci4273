@@ -1,9 +1,0 @@
-
-To Build All: make
-To Build Message: make message
-To Build Thread: make threadpool
-To Build Scheduler: make eventscheduler
-
-To Run Messge Test: ./message
-To Run Thread: ./thread
-To Run Scheduler: ./event

@@ -20,7 +20,7 @@ typedef struct {
 
     // Int for size of message without header
     int m_size;
-} IP_header;
+} ipHeader;
 
 //Struct to store arguements for the resquester threads
 typedef struct {
@@ -44,7 +44,7 @@ typedef struct {
 
     // Int for size of message without header
     int m_size;
-} TCP_header;
+} tcpHeader;
 
 //Struct to store arguements for the resquester threads
 typedef struct {
@@ -56,7 +56,7 @@ typedef struct {
 
     // Int for size of message without header
     int m_size;
-} UDP_header;
+} udpHeader;
 
 //Struct to store arguements for the resquester threads
 typedef struct {
@@ -68,7 +68,7 @@ typedef struct {
 
     // Int for size of message without header
     int m_size;
-} RDP_header;
+} rdpHeader;
 
 //Struct to store arguements for the resquester threads
 typedef struct {
@@ -80,7 +80,7 @@ typedef struct {
 
     // Int for size of message without header
     int m_size;
-} DNS_header;
+} dnsHeader;
 
 //Struct to store arguements for the resquester threads
 typedef struct {

@@ -4,18 +4,35 @@
 
 #define SLEEP_USEC 50
 
-char* msg_text = "The goal of this programming assignment is to evaluate two network implementation models......\n";
-
-void* ftpApp(void* arg);
-void* telnetApp(void* arg);
-void* rdpApp(void* arg);
-void* dnsApp(void* arg);
+char* msg_text = "This message has one hundred characters in it. Trust me. I counted. Multiple times. With spaces. Yep\n";
 
 // Struct for sending to pipes
 struct pipeStuff {
     int protocol_id;
     Message *msg;
 };
+
+void* dnsApp(void* arg)
+{
+    procPerProto* perProto = (procPerProto*) arg;
+    for (int i = 0; i < 100; i++)
+    {
+        Message* msg = new Message(msg_text, 100);
+        pipeStuff dns;
+        dns.protocol_id = 5;
+        dns.msg = msg;
+
+        // Acquire mutex lock on pipe
+        pthread_mutex_lock(perProto->dnsPipeSend.pipeMutex);
+
+        // Write to ftp send pipe
+        write(perProto->dnsPipeSend.pipe_d[1], (char*) &dns, sizeof(pipeStuff));
+
+        // Remove mutex lock on pipe
+        pthread_mutex_unlock(perProto->dnsPipeSend.pipeMutex);
+        usleep(SLEEP_USEC);
+    }
+}
 
 void* ftpApp(void* arg)
 {
@@ -28,35 +45,13 @@ void* ftpApp(void* arg)
         ftp.msg = msg;
 
         // Acquire mutex lock on pipe
-        pthread_mutex_lock(perProto->ftpPipeSend.pipe_mutex);
+        pthread_mutex_lock(perProto->ftpPipeSend.pipeMutex);
 
         // Write to ftp send pipe
         write(perProto->ftpPipeSend.pipe_d[1], (char*) &ftp, sizeof(pipeStuff));
 
         // Remove mutex lock on pipe
-        pthread_mutex_unlock(perProto->ftpPipeSend.pipe_mutex);
-        usleep(SLEEP_USEC);
-    }
-}
-
-void* telnetApp(void* arg)
-{
-    procPerProto* perProto = (procPerProto*) arg;
-    for (int i = 0; i < 100; i++)
-    {
-        Message* msg = new Message(msg_text, 100);
-        pipeStuff tel;
-        tel.protocol_id = 6;
-        tel.msg = msg;
-
-        // Acquire mutex lock on pipe
-        pthread_mutex_lock(perProto->telnetPipeSend.pipe_mutex);
-
-        // Write to ftp send pipe
-        write(perProto->telnetPipeSend.pipe_d[1], (char*) &tel, sizeof(pipeStuff));
-
-        // Remove mutex lock on pipe
-        pthread_mutex_unlock(perProto->telnetPipeSend.pipe_mutex);
+        pthread_mutex_unlock(perProto->ftpPipeSend.pipeMutex);
         usleep(SLEEP_USEC);
     }
 }
@@ -72,49 +67,49 @@ void* rdpApp(void* arg)
         rdp.msg = msg;
 
         // Acquire mutex lock on pipe
-        pthread_mutex_lock(perProto->rdpPipeSend.pipe_mutex);
+        pthread_mutex_lock(perProto->rdpPipeSend.pipeMutex);
 
         // Write to ftp send pipe
         write(perProto->rdpPipeSend.pipe_d[1], (char*) &rdp, sizeof(pipeStuff));
 
         // Remove mutex lock on pipe
-        pthread_mutex_unlock(perProto->rdpPipeSend.pipe_mutex);
+        pthread_mutex_unlock(perProto->rdpPipeSend.pipeMutex);
         usleep(SLEEP_USEC);
     }
 }
 
-void* dnsApp(void* arg)
+void* telnetApp(void* arg)
 {
     procPerProto* perProto = (procPerProto*) arg;
     for (int i = 0; i < 100; i++)
     {
         Message* msg = new Message(msg_text, 100);
-        pipeStuff dns;
-        dns.protocol_id = 5;
-        dns.msg = msg;
+        pipeStuff tel;
+        tel.protocol_id = 6;
+        tel.msg = msg;
 
         // Acquire mutex lock on pipe
-        pthread_mutex_lock(perProto->dnsPipeSend.pipe_mutex);
+        pthread_mutex_lock(perProto->telnetPipeSend.pipeMutex);
 
         // Write to ftp send pipe
-        write(perProto->dnsPipeSend.pipe_d[1], (char*) &dns, sizeof(pipeStuff));
+        write(perProto->telnetPipeSend.pipe_d[1], (char*) &tel, sizeof(pipeStuff));
 
         // Remove mutex lock on pipe
-        pthread_mutex_unlock(perProto->dnsPipeSend.pipe_mutex);
+        pthread_mutex_unlock(perProto->telnetPipeSend.pipeMutex);
         usleep(SLEEP_USEC);
     }
 }
 
 int main(int argc, char**argv)
 {
-    char* outPort;
     char* inPort;
+    char* outPort;
 
     switch (argc)
     {
     case 1:
-        outPort = "32001";
-        inPort = "32000";        
+        outPort = "8889";
+        inPort = "8888";        
         break;
 
     case 3:
@@ -123,7 +118,7 @@ int main(int argc, char**argv)
         break;
 
     default:
-        printf("Error. Must use no args and the default in and out port of 32000 and 32001, or provide both in and out ports\n");
+        printf("ERROR: USe valid syntax\n");
         exit(0);
     }
 

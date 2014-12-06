@@ -17,9 +17,9 @@ struct pipeStuff {
     Message *msg;
 };
 
-procPerProto::procPerProto(char in[], char out[]){
+procPerProto::procPerProto(char out[], char in[]){
     //Start up the communication
-    start_com(in, out);
+    comInit(out, in);
 
 
     // Create pipes. Its a bunch because there are two for each
@@ -50,46 +50,46 @@ procPerProto::procPerProto(char in[], char out[]){
 
     // Mutex gibberish to initialize locks for pipes
     ftpMutexSend = PTHREAD_MUTEX_INITIALIZER;
-    ftpPipeSend.pipe_mutex = &ftpMutexSend;
+    ftpPipeSend.pipeMutex = &ftpMutexSend;
     ftpMutexIn = PTHREAD_MUTEX_INITIALIZER;
-    ftpPipeIn.pipe_mutex = &ftpMutexIn;
+    ftpPipeIn.pipeMutex = &ftpMutexIn;
 
     telnetMutexSend = PTHREAD_MUTEX_INITIALIZER;
-    telnetPipeSend.pipe_mutex = &telnetMutexSend;
+    telnetPipeSend.pipeMutex = &telnetMutexSend;
     telnetMutexIn = PTHREAD_MUTEX_INITIALIZER;
-    telnetPipeIn.pipe_mutex = &telnetMutexIn;
+    telnetPipeIn.pipeMutex = &telnetMutexIn;
 
     rdpMutexSend = PTHREAD_MUTEX_INITIALIZER;
-    rdpPipeSend.pipe_mutex = &rdpMutexSend;
+    rdpPipeSend.pipeMutex = &rdpMutexSend;
     rdpMutexIn = PTHREAD_MUTEX_INITIALIZER;
-    rdpPipeIn.pipe_mutex = &rdpMutexIn;
+    rdpPipeIn.pipeMutex = &rdpMutexIn;
 
     dnsMutexSend = PTHREAD_MUTEX_INITIALIZER;
-    dnsPipeSend.pipe_mutex = &dnsMutexSend;
+    dnsPipeSend.pipeMutex = &dnsMutexSend;
     dnsMutexIn = PTHREAD_MUTEX_INITIALIZER;
-    dnsPipeIn.pipe_mutex = &dnsMutexIn;
+    dnsPipeIn.pipeMutex = &dnsMutexIn;
 
     tcpMutexSend = PTHREAD_MUTEX_INITIALIZER;
-    tcpPipeSend.pipe_mutex = &tcpMutexSend;
+    tcpPipeSend.pipeMutex = &tcpMutexSend;
     tcpMutexIn = PTHREAD_MUTEX_INITIALIZER;
-    tcpPipeIn.pipe_mutex = &tcpMutexIn;
+    tcpPipeIn.pipeMutex = &tcpMutexIn;
 
     udpMutexSend = PTHREAD_MUTEX_INITIALIZER;
-    udpPipeSend.pipe_mutex = &udpMutexSend;
+    udpPipeSend.pipeMutex = &udpMutexSend;
     udpMutexIn = PTHREAD_MUTEX_INITIALIZER;
-    udpPipeIn.pipe_mutex = &udpMutexIn;
+    udpPipeIn.pipeMutex = &udpMutexIn;
 
     ipMutexSend = PTHREAD_MUTEX_INITIALIZER;
-    ipPipeSend.pipe_mutex = &ipMutexSend;
+    ipPipeSend.pipeMutex = &ipMutexSend;
     ipMutexIn = PTHREAD_MUTEX_INITIALIZER;
-    ipPipeIn.pipe_mutex = &ipMutexIn;
+    ipPipeIn.pipeMutex = &ipMutexIn;
 
-    ethSend_mut = PTHREAD_MUTEX_INITIALIZER;
-    ethPipeSend.pipe_mutex = &ethSend_mut;
+    ethMutexSend = PTHREAD_MUTEX_INITIALIZER;
+    ethPipeSend.pipeMutex = &ethMutexSend;
     ethMutexIn = PTHREAD_MUTEX_INITIALIZER;
-    ethPipeIn.pipe_mutex = &ethMutexIn;
+    ethPipeIn.pipeMutex = &ethMutexIn;
 
-    m_thread_pool = new ThreadPool(16);
+    threadPool = new ThreadPool(16);
 
     // Create threads
     pthread_t tid_1, tid_2, tid_3, tid_4, tid_5, tid_6, tid_7, tid_8, tid_9;
@@ -220,10 +220,10 @@ procPerProto::procPerProto(char in[], char out[]){
 
 procPerProto::~procPerProto()
 {
-    delete m_thread_pool;
+    delete threadPool;
 }
 
-void procPerProto::start_com(char in[], char out[]){
+void procPerProto::comInit(char out[], char in[]){
     inSock = udpSocket(in);
     mutSendPort = out;
 
@@ -253,13 +253,13 @@ void* procPerProto::messageIn(void* arg)
         outPipe.msg = msg;
         
         // Lock Pipe to send to ethernet
-        pthread_mutex_lock(perProto->ethPipeIn.pipe_mutex);
+        pthread_mutex_lock(perProto->ethPipeIn.pipeMutex);
 
         // Write to ethernet in pipe
         write(perProto->ethPipeIn.pipe_d[1], (char*) &outPipe, sizeof(pipeStuff));
 
         //Unlock
-        pthread_mutex_unlock(perProto->ethPipeIn.pipe_mutex);
+        pthread_mutex_unlock(perProto->ethPipeIn.pipeMutex);
     }
 }
 
@@ -271,13 +271,13 @@ void procPerProto::messageSend(Message* msg, int protocol_id){
         ftp.msg = msg;
 
         // Acquire mutex lock on pipe
-        pthread_mutex_lock(ftpPipeSend.pipe_mutex);
+        pthread_mutex_lock(ftpPipeSend.pipeMutex);
 
         // Write to ftp send pipe
         write(ftpPipeSend.pipe_d[1], (char*) &ftp, sizeof(pipeStuff));
 
         // Remove mutex lock on pipe
-        pthread_mutex_unlock(ftpPipeSend.pipe_mutex);
+        pthread_mutex_unlock(ftpPipeSend.pipeMutex);
     }
 
     else if (protocol_id == 6){
@@ -286,13 +286,13 @@ void procPerProto::messageSend(Message* msg, int protocol_id){
         tel.msg = msg;
         
         // Acquire mutex lock on pipe
-        pthread_mutex_lock(telnetPipeSend.pipe_mutex);
+        pthread_mutex_lock(telnetPipeSend.pipeMutex);
 
         // Write to ftp send pipe
         write(telnetPipeSend.pipe_d[1], (char*) &tel, sizeof(pipeStuff));
 
         // Remove mutex lock on pipe
-        pthread_mutex_unlock(telnetPipeSend.pipe_mutex);
+        pthread_mutex_unlock(telnetPipeSend.pipeMutex);
     }
 
     else if (protocol_id == 7){
@@ -300,14 +300,14 @@ void procPerProto::messageSend(Message* msg, int protocol_id){
         rdp.protocol_id = 7;
         rdp.msg = msg;
         
-        // Acquire mutex lock on pipe
-        pthread_mutex_lock(rdpPipeSend.pipe_mutex);
+        // Lock pipe
+        pthread_mutex_lock(rdpPipeSend.pipeMutex);
 
-        // Write to ftp send pipe
+        // Write to pipe
         write(rdpPipeSend.pipe_d[1], (char*) &rdp, sizeof(pipeStuff));
 
-        // Remove mutex lock on pipe
-        pthread_mutex_unlock(rdpPipeSend.pipe_mutex);
+        // Unlock pipe
+        pthread_mutex_unlock(rdpPipeSend.pipeMutex);
     }
 
     else if (protocol_id == 8){
@@ -315,19 +315,14 @@ void procPerProto::messageSend(Message* msg, int protocol_id){
         dns.protocol_id = 8;
         dns.msg = msg;
 
-        // For testing
-        //char* test2 = new char[1024];
-        //dns.msg->msgFlat(test2);
-        //cout << "Message in pipeStuff struct for dns: " << test2 << endl;
+        // Lock pipe
+        pthread_mutex_lock(dnsPipeSend.pipeMutex);
 
-        // Acquire mutex lock on pipe
-        pthread_mutex_lock(dnsPipeSend.pipe_mutex);
-
-        // Write to ftp send pipe
+        // Write to pipe
         write(dnsPipeSend.pipe_d[1], (char*) &dns, sizeof(pipeStuff));
 
-        // Remove mutex lock on pipe
-        pthread_mutex_unlock(dnsPipeSend.pipe_mutex);
+        // Unlock Pipe
+        pthread_mutex_unlock(dnsPipeSend.pipeMutex);
     }
 
     else{
@@ -339,68 +334,64 @@ void* procPerProto::ethSend(void* arg){
     procPerProto* perProto = (procPerProto*) arg;
     struct sockaddr_in serverAddress;
     socklen_t len;
-    struct hostent *phe;    // pointer to host information entry
+    struct hostent *phe;   
 
     memset(&serverAddress, 0, sizeof(serverAddress));
     serverAddress.sin_family = AF_INET;
 
     char* host = "localhost";
-
-    // Map port number (char string) to port number (int)
-    if ((serverAddress.sin_port = htons((unsigned short)atoi(perProto->mutSendPort))) == 0)
-        errexit("can't get \"%s\" port number\n", perProto->mutSendPort);
-
-    // Map host name to IP address, allowing for dotted decimal
+   
+    // Host to IP
     if ( (phe = gethostbyname(host)) )
     {
         memcpy(&serverAddress.sin_addr, phe->h_addr, phe->h_length);
     }
     else if ( (serverAddress.sin_addr.s_addr = inet_addr(host)) == INADDR_NONE )
-        errexit("can't get \"%s\" host entry\n", host);
+        errexit("ERROR in  \"%s\" host entry\n", host);
 
-    // Allocate a socket
+    // String to int
+    if ((serverAddress.sin_port = htons((unsigned short)atoi(perProto->mutSendPort))) == 0)
+        errexit("ERROR on  \"%s\" port number\n", perProto->mutSendPort);
+
+
+
+    // Makin sockets
     int udpSock = socket(AF_INET, SOCK_DGRAM, 0);
     if (udpSock < 0)
-        errexit("can't create socket: %s\n", strerror(errno));
+        errexit("ERROR: Cannot create socket: %s\n", strerror(errno));
     
     while(1){
         Message* msg;
         pipeStuff* seePipe = new pipeStuff;
 
-        // Mutext unlock on read pipe
-        pthread_mutex_unlock(perProto->ethPipeSend.pipe_mutex);
+        // Unlock pipe
+        pthread_mutex_unlock(perProto->ethPipeSend.pipeMutex);
 
-        // Wait until read succeeds
+        // Hang on read
         read(perProto->ethPipeSend.pipe_d[0], (char*) seePipe, sizeof(pipeStuff));
 
-        // Mutext lock on read pipe to prevent race conditions
-        pthread_mutex_lock(perProto->ethPipeSend.pipe_mutex);
+        // Lock pip
+        pthread_mutex_lock(perProto->ethPipeSend.pipeMutex);
 
-        // Store message in variable
+        // Store message
         msg = seePipe->msg;
 
-        // Create new header
+        // Create header
         ethHeader* h = (ethHeader *) malloc( sizeof(ethHeader));
         h->hlp = seePipe->protocol_id;
         h->m_size = msg->msgLen();
-
-        // For testing
-        //cout << "HLP in eth send: " << h->hlp << endl;
         
-        // Add header to message
+        // Add header
         msg->msgAddHdr((char*) h, sizeof(ethHeader));
 
-        // Flaten message to buffer
         char msg_buf[1024];
         memset(&msg_buf, 0, sizeof(msg_buf));
         msg->msgFlat(msg_buf);
 
-        // Sent message to network
+        // Start on the chain
         if (sendto(udpSock, msg_buf, msg->msgLen(), 0, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
         printf("Error with sendto %s\n", strerror(errno));
 
-        // For testing
-        //cout << "Message sent over network to peer" << endl;
     }
 
 
@@ -413,41 +404,34 @@ void* procPerProto::ethIn(void* arg){
         Message* msg;
         pipeStuff* seePipe = new pipeStuff;
 
-        // Mutext unlock on read pipe
-        pthread_mutex_unlock(perProto->ethPipeIn.pipe_mutex);
+        // Unlock pipe
+        pthread_mutex_unlock(perProto->ethPipeIn.pipeMutex);
 
-        // Wait to read message from pipe
+        // Hang on read
         read(perProto->ethPipeIn.pipe_d[0], (char*) seePipe, sizeof(pipeStuff));
 
-        // Mutext lock on read pipe to prevent race conditions
-        pthread_mutex_lock(perProto->ethPipeIn.pipe_mutex);
+        // Lock pipe
+        pthread_mutex_lock(perProto->ethPipeIn.pipeMutex);
 
-        // For testing
-        //cout << "Message read from receive pipe in eth recv" << endl;
-
-        // Strip headers
+        // Strip header
         msg = seePipe->msg;
         ethHeader* stripped = (ethHeader*)msg->msgStripHdr(sizeof(ethHeader));
         int protocol_id = stripped->hlp;
 
-        // For testing
-        //cout << "Protocol ID stripped in eth header" << protocol_id << endl;
-        //cout << "Message size stripped in eth header" << stripped->m_size << endl;
-
-        // Create new pipe unit
+        // Create new pipe to do some sending
         pipeStuff outPipe;
         outPipe.protocol_id = 1;
         outPipe.msg = msg;
 
         if (protocol_id == 2){
             // Lock mutex
-            pthread_mutex_lock(perProto->ipPipeIn.pipe_mutex);
+            pthread_mutex_lock(perProto->ipPipeIn.pipeMutex);
 
             // Write to pipe
             write(perProto->ipPipeIn.pipe_d[1], (char*) &outPipe, sizeof(pipeStuff));
 
             // Unlock mutex
-            pthread_mutex_unlock(perProto->ipPipeIn.pipe_mutex);
+            pthread_mutex_unlock(perProto->ipPipeIn.pipeMutex);
         }
         else{
             cout << "Error invalid protocol going up from eth" << endl;
@@ -462,44 +446,39 @@ void* procPerProto::ipSend(void* arg){
         Message* msg;
         pipeStuff* seePipe = new pipeStuff;
 
-        // Mutext unlock on read pipe
-        pthread_mutex_unlock(perProto->ipPipeSend.pipe_mutex);
+        // Unlock pipe
+        pthread_mutex_unlock(perProto->ipPipeSend.pipeMutex);
 
-        // Wait for message to send
+        // Hang on send
         read(perProto->ipPipeSend.pipe_d[0], (char*) seePipe, sizeof(pipeStuff));
 
-        // Mutext lock on read pipe to prevent race conditions
-        pthread_mutex_lock(perProto->ipPipeSend.pipe_mutex);
+        // Lock pipe
+        pthread_mutex_lock(perProto->ipPipeSend.pipeMutex);
 
-        // Store message in variable
+        // Store message
         msg = seePipe->msg;
 
-        // For testing
-        //UDP_header* h2 = (UDP_header*)msg->msgStripHdr(sizeof(UDP_header));
-        //cout << "Size in stripped header for UDP: " << h2->m_size << endl;
-        //cout << "HLP in stripped header for UDP: " << h2->hlp << endl;
-
         // Create new header
-        IP_header* h = (IP_header *) malloc( sizeof(IP_header));
+        ipHeader* h = (ipHeader *) malloc( sizeof(ipHeader));
         h->hlp = seePipe->protocol_id;
         h->m_size = msg->msgLen();
         
-        // Add header to message
-        msg->msgAddHdr((char*) h, sizeof(IP_header));
+        // Add header
+        msg->msgAddHdr((char*) h, sizeof(ipHeader));
 
-        // Build new pipe unit
+        // Build up pipe
         pipeStuff outPipe;
         outPipe.protocol_id = 2;
         outPipe.msg = msg;
 
-        // Acquire mutex lock on pipe
-        pthread_mutex_lock(perProto->ethPipeSend.pipe_mutex);
+        // Lock pipe
+        pthread_mutex_lock(perProto->ethPipeSend.pipeMutex);
 
-        // Write to eth send pipe
+        // Write to pipe
         write(perProto->ethPipeSend.pipe_d[1], (char*) &outPipe, sizeof(pipeStuff));
 
-        // Remove mutex lock on pipe
-        pthread_mutex_unlock(perProto->ethPipeSend.pipe_mutex);
+        // Unlock pipe
+        pthread_mutex_unlock(perProto->ethPipeSend.pipeMutex);
     }
 }
 
@@ -510,44 +489,44 @@ void* procPerProto::ipIn(void* arg){
         Message* msg;
         pipeStuff* seePipe = new pipeStuff;
 
-        // Mutext unlock on read pipe
-        pthread_mutex_unlock(perProto->ipPipeIn.pipe_mutex);
+        // Unlock pipe
+        pthread_mutex_unlock(perProto->ipPipeIn.pipeMutex);
 
-        // Read from recv pipe
+        // Read pipe
         read(perProto->ipPipeIn.pipe_d[0], (char*) seePipe, sizeof(pipeStuff));
 
-        // Mutext lock on read pipe to prevent race conditions
-        pthread_mutex_lock(perProto->ipPipeIn.pipe_mutex);
+        // Lock pipe
+        pthread_mutex_lock(perProto->ipPipeIn.pipeMutex);
 
-        // Add header to message
+        // Add header
         msg = seePipe->msg;
-        IP_header* stripped = (IP_header*)msg->msgStripHdr(sizeof(IP_header));
+        ipHeader* stripped = (ipHeader*)msg->msgStripHdr(sizeof(ipHeader));
         int protocol_id = stripped->hlp;
 
-        // Create new pipe unit
+        // Build up pipe
         pipeStuff outPipe;
         outPipe.protocol_id = 2;
         outPipe.msg = msg;
 
         if (protocol_id == 3){
-            // Lock mutex
-            pthread_mutex_lock(perProto->tcpPipeIn.pipe_mutex);
+            // Lock pipe
+            pthread_mutex_lock(perProto->tcpPipeIn.pipeMutex);
 
             // Write to pipe
             write(perProto->tcpPipeIn.pipe_d[1], (char*) &outPipe, sizeof(pipeStuff));
 
-            // Unlock mutex
-            pthread_mutex_unlock(perProto->tcpPipeIn.pipe_mutex);
+            // Unlock pipe
+            pthread_mutex_unlock(perProto->tcpPipeIn.pipeMutex);
         }
         else if (protocol_id == 4){
-            // Lock mutex
-            pthread_mutex_lock(perProto->udpPipeIn.pipe_mutex);
+            // Lock pipe
+            pthread_mutex_lock(perProto->udpPipeIn.pipeMutex);
 
             // Write to pipe
             write(perProto->udpPipeIn.pipe_d[1], (char*) &outPipe, sizeof(pipeStuff));
 
-            // Unlock mutex
-            pthread_mutex_unlock(perProto->udpPipeIn.pipe_mutex);
+            // Unlock pipe
+            pthread_mutex_unlock(perProto->udpPipeIn.pipeMutex);
         }
         else{
             cout << "Error invalid protocol going up from ip" << endl;
@@ -562,39 +541,39 @@ void* procPerProto::tcpSend(void* arg){
         Message* msg;
         pipeStuff* seePipe = new pipeStuff;
 
-        // Mutext unlock on read pipe
-        pthread_mutex_unlock(perProto->tcpPipeSend.pipe_mutex);
+        // Unlock pipe
+        pthread_mutex_unlock(perProto->tcpPipeSend.pipeMutex);
 
-        // Wait for message to send
+        // Hang on pipe
         read(perProto->tcpPipeSend.pipe_d[0], (char*) seePipe, sizeof(pipeStuff));
 
-        // Mutext lock on read pipe to prevent race conditions
-        pthread_mutex_lock(perProto->tcpPipeSend.pipe_mutex);
+        // Lock pipe
+        pthread_mutex_lock(perProto->tcpPipeSend.pipeMutex);
 
-        // Store message in variable
+        // Store message
         msg = seePipe->msg;
 
-        // Create new header
-        TCP_header* h = (TCP_header *) malloc( sizeof(TCP_header));
+        // Make new header
+        tcpHeader* h = (tcpHeader *) malloc( sizeof(tcpHeader));
         h->hlp = seePipe->protocol_id;
         h->m_size = msg->msgLen();
         
-        // Add header to message
-        msg->msgAddHdr((char*) h, sizeof(TCP_header));
+        // Add header
+        msg->msgAddHdr((char*) h, sizeof(tcpHeader));
 
-        // Build new pipe unit
+        // Build up pipe
         pipeStuff outPipe;
         outPipe.protocol_id = 3;
         outPipe.msg = msg;
 
-        // Acquire mutex lock on pipe
-        pthread_mutex_lock(perProto->ipPipeSend.pipe_mutex);
+        // Lock pipe
+        pthread_mutex_lock(perProto->ipPipeSend.pipeMutex);
 
-        // Write to eth send pipe
+        // Write to pipe
         write(perProto->ipPipeSend.pipe_d[1], (char*) &outPipe, sizeof(pipeStuff));
 
-        // Remove mutex lock on pipe
-        pthread_mutex_unlock(perProto->ipPipeSend.pipe_mutex);
+        // Lock to pipe
+        pthread_mutex_unlock(perProto->ipPipeSend.pipeMutex);
     }
 }
 
@@ -605,49 +584,44 @@ void* procPerProto::tcpIn(void* arg){
         Message* msg;
         pipeStuff* seePipe = new pipeStuff;
 
-        // Mutext unlock on read pipe
-        pthread_mutex_unlock(perProto->tcpPipeIn.pipe_mutex);
+        // Unlock pipe
+        pthread_mutex_unlock(perProto->tcpPipeIn.pipeMutex);
 
-        // Read from recv pipe
+        // Read pipe
         read(perProto->tcpPipeIn.pipe_d[0], (char*) seePipe, sizeof(pipeStuff));
 
-        // Mutext lock on read pipe to prevent race conditions
-        pthread_mutex_lock(perProto->tcpPipeIn.pipe_mutex);
+        // Lock pipe
+        pthread_mutex_lock(perProto->tcpPipeIn.pipeMutex);
 
         // Strip headers
         msg = seePipe->msg;
-        TCP_header* stripped = (TCP_header*)msg->msgStripHdr(sizeof(TCP_header));
+        tcpHeader* stripped = (tcpHeader*)msg->msgStripHdr(sizeof(tcpHeader));
         int protocol_id = stripped->hlp;
 
-        // Strip headers
-        //msg = seePipe->msg;
-        //int protocol_id = atoi(msg->msgStripHdr(2));
-        //msg->msgStripHdr(6);
-
-        // Create new pipe unit
+        // Create pipe
         pipeStuff outPipe;
         outPipe.protocol_id = 3;
         outPipe.msg = msg;
 
         if (protocol_id == 5){
-            // Lock mutex
-            pthread_mutex_lock(perProto->ftpPipeIn.pipe_mutex);
+            // Lock pipe
+            pthread_mutex_lock(perProto->ftpPipeIn.pipeMutex);
 
             // Write to pipe
             write(perProto->ftpPipeIn.pipe_d[1], (char*) &outPipe, sizeof(pipeStuff));
 
-            // Unlock mutex
-            pthread_mutex_unlock(perProto->ftpPipeIn.pipe_mutex);
+            // Unlock pipe
+            pthread_mutex_unlock(perProto->ftpPipeIn.pipeMutex);
         }
         else if (protocol_id == 6){
-            // Lock mutex
-            pthread_mutex_lock(perProto->telnetPipeIn.pipe_mutex);
+            // Lock pipe
+            pthread_mutex_lock(perProto->telnetPipeIn.pipeMutex);
 
             // Write to pipe
             write(perProto->telnetPipeIn.pipe_d[1], (char*) &outPipe, sizeof(pipeStuff));
 
-            // Unlock mutex
-            pthread_mutex_unlock(perProto->telnetPipeIn.pipe_mutex);
+            // Unlock pipe
+            pthread_mutex_unlock(perProto->telnetPipeIn.pipeMutex);
         }
         else{
             cout << "Error invalid protocol going up from tcp" << endl;
@@ -658,60 +632,43 @@ void* procPerProto::tcpIn(void* arg){
 void* procPerProto::udpSend(void* arg){
     procPerProto* perProto = (procPerProto*) arg;
 
-    // For testing
-    //cout << "Waiting for UDP message to send" << endl;
-
     while(1){
         Message* msg;
         pipeStuff* seePipe = new pipeStuff;
 
-        // Mutext unlock on read pipe
-        pthread_mutex_unlock(perProto->udpPipeSend.pipe_mutex);
+        // Unlock pipe
+        pthread_mutex_unlock(perProto->udpPipeSend.pipeMutex);
 
-        // Wait for message to send
+        // Hang on pipe
         read(perProto->udpPipeSend.pipe_d[0], (char*) seePipe, sizeof(pipeStuff));
 
-        // Mutext lock on read pipe to prevent race conditions
-        pthread_mutex_lock(perProto->udpPipeSend.pipe_mutex);
+        // Lock pipe
+        pthread_mutex_lock(perProto->udpPipeSend.pipeMutex);
 
-        // For testing
-        //cout << "UDP message received to send" << endl;
-
-        // Store message in variable
+        // Save message
         msg = seePipe->msg;
 
-        // For testing
-        //DNS_header* h2 = (DNS_header*)msg->msgStripHdr(sizeof(DNS_header));
-        //cout << "Size in stripped header: " << h2->m_size << endl;
-
-        // Create new header
-        UDP_header* h = (UDP_header *) malloc( sizeof(UDP_header));
+        // Create header
+        udpHeader* h = (udpHeader *) malloc( sizeof(udpHeader));
         h->hlp = seePipe->protocol_id;
         h->m_size = msg->msgLen();
-
-        // For testing
-        //cout << "Protocol ID passed to UDP send: " << h->hlp << endl;
-        //cout << "HLP in stripped header for pass to UDP send: " << h2->hlp << endl;
         
-        // Add header to message
-        msg->msgAddHdr((char*) h, sizeof(UDP_header));
+        // Add header
+        msg->msgAddHdr((char*) h, sizeof(udpHeader));
 
-        // Build new pipe unit
+        // Build up pipe
         pipeStuff outPipe;
         outPipe.protocol_id = 4;
         outPipe.msg = msg;
 
-        // Acquire mutex lock on pipe
-        pthread_mutex_lock(perProto->ipPipeSend.pipe_mutex);
+        // Lock pipe
+        pthread_mutex_lock(perProto->ipPipeSend.pipeMutex);
 
-        // Write to eth send pipe
+        // Write to pipe
         write(perProto->ipPipeSend.pipe_d[1], (char*) &outPipe, sizeof(pipeStuff));
 
-        // For testing
-        //cout << "UDP message written to IP" << endl;
-
-        // Remove mutex lock on pipe
-        pthread_mutex_unlock(perProto->ipPipeSend.pipe_mutex);
+        // Unlock pipe
+        pthread_mutex_unlock(perProto->ipPipeSend.pipeMutex);
     }
 }
 
@@ -722,49 +679,44 @@ void* procPerProto::udpIn(void* arg){
         Message* msg;
         pipeStuff* seePipe = new pipeStuff;
 
-        // Mutext unlock on read pipe
-        pthread_mutex_unlock(perProto->udpPipeIn.pipe_mutex);
+        // Unlock pipe
+        pthread_mutex_unlock(perProto->udpPipeIn.pipeMutex);
 
-        // Read from recv pipe
+        // Read pipe
         read(perProto->udpPipeIn.pipe_d[0], (char*) seePipe, sizeof(pipeStuff));
 
-        // Mutext lock on read pipe to prevent race conditions
-        pthread_mutex_lock(perProto->udpPipeIn.pipe_mutex);
+        // Lock pipe
+        pthread_mutex_lock(perProto->udpPipeIn.pipeMutex);
 
         // Strip headers
         msg = seePipe->msg;
-        UDP_header* stripped = (UDP_header*)msg->msgStripHdr(sizeof(UDP_header));
+        udpHeader* stripped = (udpHeader*)msg->msgStripHdr(sizeof(udpHeader));
         int protocol_id = stripped->hlp;
 
-        // Strip headers
-        //msg = seePipe->msg;
-        //int protocol_id = atoi(msg->msgStripHdr(2));
-        //msg->msgStripHdr(6);
-
-        // Create new pipe unit
+        // Create new pipe
         pipeStuff outPipe;
         outPipe.protocol_id = 4;
         outPipe.msg = msg;
 
         if (protocol_id == 7){
-            // Lock mutex
-            pthread_mutex_lock(perProto->rdpPipeIn.pipe_mutex);
+            // Lock pipe
+            pthread_mutex_lock(perProto->rdpPipeIn.pipeMutex);
 
             // Write to pipe
             write(perProto->rdpPipeIn.pipe_d[1], (char*) &outPipe, sizeof(pipeStuff));
 
-            // Unlock mutex
-            pthread_mutex_unlock(perProto->rdpPipeIn.pipe_mutex);
+            // Unlock pipe
+            pthread_mutex_unlock(perProto->rdpPipeIn.pipeMutex);
         }
         else if (protocol_id == 8){
-            // Lock mutex
-            pthread_mutex_lock(perProto->dnsPipeIn.pipe_mutex);
+            // Lock pipe
+            pthread_mutex_lock(perProto->dnsPipeIn.pipeMutex);
 
             // Write to pipe
             write(perProto->dnsPipeIn.pipe_d[1], (char*) &outPipe, sizeof(pipeStuff));
 
-            // Unlock mutex
-            pthread_mutex_unlock(perProto->dnsPipeIn.pipe_mutex);
+            // Unlock pipe
+            pthread_mutex_unlock(perProto->dnsPipeIn.pipeMutex);
         }
         else{
             cout << "Error invalid protocol going up from udp" << endl;
@@ -779,38 +731,38 @@ void* procPerProto::ftpSend(void* arg){
         Message* msg;
         pipeStuff* seePipe = new pipeStuff;
 
-        // Mutext unlock on read pipe
-        pthread_mutex_unlock(perProto->ftpPipeSend.pipe_mutex);
+        // Unlock pipe
+        pthread_mutex_unlock(perProto->ftpPipeSend.pipeMutex);
 
-        // Wait for message to send
+        // Hang on pipe
         read(perProto->ftpPipeSend.pipe_d[0], (char*) seePipe, sizeof(pipeStuff));
 
-        // Mutext lock on read pipe to prevent race conditions
-        pthread_mutex_lock(perProto->ftpPipeSend.pipe_mutex);
+        // Lock pipe
+        pthread_mutex_lock(perProto->ftpPipeSend.pipeMutex);
 
-        // Store message in variable
+        // Save
         msg = seePipe->msg;
 
-        // Create new header
+        // Create header
         ftpHeader* h = (ftpHeader *) malloc( sizeof(ftpHeader));
         h->m_size = msg->msgLen();
         
-        // Add header to message
+        // Add header
         msg->msgAddHdr((char*) h, sizeof(ftpHeader));
 
-        // Build new pipe unit
+        // Build up pipe
         pipeStuff outPipe;
         outPipe.protocol_id = 5;
         outPipe.msg = msg;
 
-        // Acquire mutex lock on pipe
-        pthread_mutex_lock(perProto->tcpPipeSend.pipe_mutex);
+        // Lock pipe
+        pthread_mutex_lock(perProto->tcpPipeSend.pipeMutex);
 
-        // Write to eth send pipe
+        // Write to pipe
         write(perProto->tcpPipeSend.pipe_d[1], (char*) &outPipe, sizeof(pipeStuff));
 
-        // Remove mutex lock on pipe
-        pthread_mutex_unlock(perProto->tcpPipeSend.pipe_mutex);
+        // Unlock pipe
+        pthread_mutex_unlock(perProto->tcpPipeSend.pipeMutex);
     }
 }
 
@@ -821,28 +773,28 @@ void* procPerProto::ftpIn(void* arg){
         Message* msg;
         pipeStuff* seePipe = new pipeStuff;
 
-        // Mutext unlock on read pipe
-        pthread_mutex_unlock(perProto->ftpPipeIn.pipe_mutex);
+        // Unlock pipe
+        pthread_mutex_unlock(perProto->ftpPipeIn.pipeMutex);
 
-        // Read from recv pipe
+        // Read pipe
         read(perProto->ftpPipeIn.pipe_d[0], (char*) seePipe, sizeof(pipeStuff));
 
-        // Mutext lock on read pipe to prevent race conditions
-        pthread_mutex_lock(perProto->ftpPipeIn.pipe_mutex);
+        // Lock pipe
+        pthread_mutex_lock(perProto->ftpPipeIn.pipeMutex);
 
         // Strip headers
         msg = seePipe->msg;
         msg->msgStripHdr(sizeof(ftpHeader));
 
-        // Copy message to buffer and terminate line
+        // Message copy
         char* msg_buf = new char[1024];
         msg->msgFlat(msg_buf);
         msg_buf[msg->msgLen()] = '\n';
 
-        // Print to user
+        // Output
         cout << "FTP Message Recevied: " << msg_buf;
 
-        // Clean up
+        // Destroy
         delete msg_buf;
     }
 }
@@ -854,38 +806,38 @@ void* procPerProto::telnetSend(void* arg){
         Message* msg;
         pipeStuff* seePipe = new pipeStuff;
 
-        // Mutext unlock on read pipe
-        pthread_mutex_unlock(perProto->telnetPipeSend.pipe_mutex);
+        // Unlock pipe
+        pthread_mutex_unlock(perProto->telnetPipeSend.pipeMutex);
 
-        // Wait for message to send
+        // Hang on pipe
         read(perProto->telnetPipeSend.pipe_d[0], (char*) seePipe, sizeof(pipeStuff));
 
-        // Mutext lock on read pipe to prevent race conditions
-        pthread_mutex_lock(perProto->telnetPipeSend.pipe_mutex);
+        // Lock pipe
+        pthread_mutex_lock(perProto->telnetPipeSend.pipeMutex);
 
-        // Store message in variable
+        // Save message
         msg = seePipe->msg;
 
-        // Create new header
+        // Create header
         telnetHeader* h = (telnetHeader*) malloc( sizeof(telnetHeader));
         h->m_size = msg->msgLen();
         
-        // Add header to message
+        // Add header
         msg->msgAddHdr((char*) h, sizeof(telnetHeader));
 
-        // Build new pipe unit
+        // Build up pipe
         pipeStuff outPipe;
         outPipe.protocol_id = 6;
         outPipe.msg = msg;
 
-        // Acquire mutex lock on pipe
-        pthread_mutex_lock(perProto->tcpPipeSend.pipe_mutex);
+        // Lock pipe
+        pthread_mutex_lock(perProto->tcpPipeSend.pipeMutex);
 
-        // Write to eth send pipe
+        // Write to pipe
         write(perProto->tcpPipeSend.pipe_d[1], (char*) &outPipe, sizeof(pipeStuff));
 
-        // Remove mutex lock on pipe
-        pthread_mutex_unlock(perProto->tcpPipeSend.pipe_mutex);
+        // Unlock pipe
+        pthread_mutex_unlock(perProto->tcpPipeSend.pipeMutex);
     }
 }
 
@@ -896,28 +848,28 @@ void* procPerProto::telnetIn(void* arg){
         Message* msg;
         pipeStuff* seePipe = new pipeStuff;
 
-        // Mutext unlock on read pipe
-        pthread_mutex_unlock(perProto->telnetPipeIn.pipe_mutex);
+        // Unlock pipe
+        pthread_mutex_unlock(perProto->telnetPipeIn.pipeMutex);
 
-        // Read from recv pipe
+        // Read pipe
         read(perProto->telnetPipeIn.pipe_d[0], (char*) seePipe, sizeof(pipeStuff));
 
-        // Mutext lock on read pipe to prevent race conditions
-        pthread_mutex_lock(perProto->telnetPipeIn.pipe_mutex);
+        // Lock pipe
+        pthread_mutex_lock(perProto->telnetPipeIn.pipeMutex);
 
         // Strip headers
         msg = seePipe->msg;
         msg->msgStripHdr(sizeof(telnetHeader));
 
-        // Copy message to buffer and terminate line
+        // Message copy
         char* msg_buf = new char[1024];
         msg->msgFlat(msg_buf);
         msg_buf[msg->msgLen()] = '\n';
 
-        // Print to user
+        // OUtput
         cout << "Telnet Message Recevied: " << msg_buf;
 
-        // Clean up
+        // Destroy
         delete msg_buf;
     }
 }
@@ -929,38 +881,38 @@ void* procPerProto::rdpSend(void* arg){
         Message* msg;
         pipeStuff* seePipe = new pipeStuff;
 
-        // Mutext unlock on read pipe
-        pthread_mutex_unlock(perProto->rdpPipeSend.pipe_mutex);
+        // Unlock pipe
+        pthread_mutex_unlock(perProto->rdpPipeSend.pipeMutex);
 
-        // Wait for message to send
+        // Hang on pipe
         read(perProto->rdpPipeSend.pipe_d[0], (char*) seePipe, sizeof(pipeStuff));
 
-        // Mutext lock on read pipe to prevent race conditions
-        pthread_mutex_lock(perProto->rdpPipeSend.pipe_mutex);
+        // Lock pipe
+        pthread_mutex_lock(perProto->rdpPipeSend.pipeMutex);
 
-        // Store message in variable
+        // Save
         msg = seePipe->msg;
 
-        // Create new header
-        RDP_header* h = (RDP_header *) malloc( sizeof(RDP_header));
+        // Create header
+        rdpHeader* h = (rdpHeader *) malloc( sizeof(rdpHeader));
         h->m_size = msg->msgLen();
         
-        // Add header to message
-        msg->msgAddHdr((char*) h, sizeof(RDP_header));
+        // Add header
+        msg->msgAddHdr((char*) h, sizeof(rdpHeader));
 
-        // Build new pipe unit
+        // Build up pipe
         pipeStuff outPipe;
         outPipe.protocol_id = 7;
         outPipe.msg = msg;
 
-        // Acquire mutex lock on pipe
-        pthread_mutex_lock(perProto->udpPipeSend.pipe_mutex);
+        // Lock pipe
+        pthread_mutex_lock(perProto->udpPipeSend.pipeMutex);
 
-        // Write to eth send pipe
+        // Write to pipe
         write(perProto->udpPipeSend.pipe_d[1], (char*) &outPipe, sizeof(pipeStuff));
 
-        // Remove mutex lock on pipe
-        pthread_mutex_unlock(perProto->udpPipeSend.pipe_mutex);
+        // Unlock pipe
+        pthread_mutex_unlock(perProto->udpPipeSend.pipeMutex);
     }
 }
 
@@ -971,28 +923,28 @@ void* procPerProto::rdpIn(void* arg){
         Message* msg;
         pipeStuff* seePipe = new pipeStuff;
 
-        // Mutext unlock on read pipe
-        pthread_mutex_unlock(perProto->rdpPipeIn.pipe_mutex);
+        // Unlock pipe
+        pthread_mutex_unlock(perProto->rdpPipeIn.pipeMutex);
 
-        // Read from recv pip
+        // Read pipe
         read(perProto->rdpPipeIn.pipe_d[0], (char*) seePipe, sizeof(pipeStuff));
 
-        // Mutext lock on read pipe to prevent race conditions
-        pthread_mutex_lock(perProto->rdpPipeIn.pipe_mutex);
+        // Lock pipe
+        pthread_mutex_lock(perProto->rdpPipeIn.pipeMutex);
 
         // Strip headers
         msg = seePipe->msg;
-        msg->msgStripHdr(sizeof(RDP_header));
+        msg->msgStripHdr(sizeof(rdpHeader));
 
-        // Copy message to buffer and terminate line
+        // Message Copy
         char* msg_buf = new char[1024];
         msg->msgFlat(msg_buf);
         msg_buf[msg->msgLen()] = '\n';
 
-        // Print to user
+        // Output
         cout << "RDP Message Recevied: " << msg_buf;
 
-        // Clean up
+        // Destroy
         delete msg_buf;
     }
 }
@@ -1004,56 +956,38 @@ void* procPerProto::dnsSend(void* arg){
         Message* msg;
         pipeStuff* seePipe = new pipeStuff;
 
-        // For testing
-        //cout << "Waiting for DNS message to send" << endl;
+        // Unlock pipe
+        pthread_mutex_unlock(perProto->dnsPipeSend.pipeMutex);
 
-        // Mutext unlock on read pipe
-        pthread_mutex_unlock(perProto->dnsPipeSend.pipe_mutex);
-
-        // Wait for message to send
+        // Hang on pipe
         read(perProto->dnsPipeSend.pipe_d[0], (char*)seePipe, sizeof(pipeStuff));
 
-        // Mutext lock on read pipe to prevent race conditions
-        pthread_mutex_lock(perProto->dnsPipeSend.pipe_mutex);
+        //Lock pipes
+        pthread_mutex_lock(perProto->dnsPipeSend.pipeMutex);
 
-        // For testing
-        //cout << "Protocol ID test: " << seePipe->protocol_id << endl;
-
-        // Store message in variable
+        // Save
         msg = seePipe->msg;
 
-        // For testing
-        //char* test = new char[1024];
-        //msg->msgFlat(test);
-        //cout << "Message received for sending in dnsSend: " << test << endl;
-
-        // Create new header
-        DNS_header* h = (DNS_header *) malloc( sizeof(DNS_header));
+        // Create header
+        dnsHeader* h = (dnsHeader *) malloc( sizeof(dnsHeader));
         h->m_size = msg->msgLen();
 
-        // Add header to message
-        msg->msgAddHdr((char*) h, sizeof(DNS_header));
-        
-        // For testing
-        //DNS_header* h2 = (DNS_header*)msg->msgStripHdr(sizeof(DNS_header));
-        //cout << "Size after adding DNS_header: " << msg->msgLen() << endl;
+        // Add header
+        msg->msgAddHdr((char*) h, sizeof(dnsHeader));
 
-        // Build new pipe unit
+        // Build up pipe
         pipeStuff outPipe;
         outPipe.protocol_id = 8;
         outPipe.msg = msg;
 
-        // For testing
-        //cout << "DNS pipe unit built" << endl;
+        // Lock pipe
+        pthread_mutex_lock(perProto->udpPipeSend.pipeMutex);
 
-        // Acquire mutex lock on pipe
-        pthread_mutex_lock(perProto->udpPipeSend.pipe_mutex);
-
-        // Write to eth send pipe
+        // Write to pipe
         write(perProto->udpPipeSend.pipe_d[1], (char*) &outPipe, sizeof(pipeStuff));
 
-        // Remove mutex lock on pipe
-        pthread_mutex_unlock(perProto->udpPipeSend.pipe_mutex);
+        // Unlock pipe
+        pthread_mutex_unlock(perProto->udpPipeSend.pipeMutex);
     }
 }
 
@@ -1064,28 +998,28 @@ void* procPerProto::dnsIn(void* arg){
         Message* msg;
         pipeStuff* seePipe = new pipeStuff;
 
-        // Mutext unlock on read pipe
-        pthread_mutex_unlock(perProto->dnsPipeIn.pipe_mutex);
+        // Unlock pipe
+        pthread_mutex_unlock(perProto->dnsPipeIn.pipeMutex);
 
-        // Read from recv pipe
+        // Read from pipe
         read(perProto->dnsPipeIn.pipe_d[0], (char*) seePipe, sizeof(pipeStuff));
 
-        // Mutext lock on read pipe to prevent race conditions
-        pthread_mutex_lock(perProto->dnsPipeIn.pipe_mutex);
+        // Lock pipe
+        pthread_mutex_lock(perProto->dnsPipeIn.pipeMutex);
 
         // Strip headers
         msg = seePipe->msg;
-        msg->msgStripHdr(sizeof(DNS_header));
+        msg->msgStripHdr(sizeof(dnsHeader));
 
-        // Copy message to buffer and terminate line
+        // Message Copy
         char* msg_buf = new char[1024];
         msg->msgFlat(msg_buf);
         msg_buf[msg->msgLen()] = '\n';
 
-        // Print to user
+        // OUtput
         cout << "DNS Message Recevied: " << msg_buf;
 
-        // Clean up
+        // Destroy
         delete msg_buf;
     }
 }
